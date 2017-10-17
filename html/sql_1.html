@@ -1,0 +1,28 @@
+<!doctype>
+<html>
+    <body>
+
+        <table border = 1>
+            {% for key, value in regionDict.items() %}
+         
+                <tr>
+                    <th> {{ key }} </th>
+                    <td> {{ value }} </td>
+                </tr>
+            
+            {% endfor %}
+        </table>
+
+        <table border = 1>
+            {% for key, value in areaDict.items() %}
+         
+                <tr>
+                    <th> {{ key }} </th>
+                    <td> {{ value }} </td>
+                </tr>
+            
+            {% endfor %}
+        </table>
+      
+   </body>
+</html>

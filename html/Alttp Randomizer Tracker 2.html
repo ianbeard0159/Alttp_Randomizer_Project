@@ -1,0 +1,540 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+
+    <!-- Set page width and initial zoom to work with whatever device is being used -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap-CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- Bootstrap-jQuerry -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Bootstrap-JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script>
+        
+        var inventoryList = ['none', '100 rupies', '500 rupies'];
+        var inData;
+
+        // -=Location Object=-
+        function area(inName, inNumOfChests, inRequiredItems, inCheck)
+        {
+            this.locationName = inName;
+            this.numOfChests = inNumOfChests;
+            this.requiredItems = inRequiredItems.toLowerCase();
+            this.checkable = inCheck;
+            this.numFound = 0;
+            this.status = "";
+            this.arrFound = [];
+        }
+        
+        // -=Region Object=-
+        function region(inName, inAreaArray)
+        {
+            this.regionName = inName;
+            this.areaArray = inAreaArray;
+            this.accessable = "bad";
+        }
+
+        // -=Add a region to the list=-
+        var regionArray = [];
+        function addRegion(inRegion)
+        {
+            regionArray.push(inRegion);
+        }
+
+        // -=Add a location to a given region=-
+        function addArea(inRegion, inArea)
+        {
+            var region;
+            for(var i = 0; i < regionArray.length; i++)
+            {
+                if(regionArray[i].regionName == inRegion)
+                {
+                    region = regionArray[i];
+                }
+            }
+            region.areaArray.push(inArea);
+        }
+
+        // -=Populate the table of regions in the UI=-
+        function populateLocationList()
+        {
+            $("#cannotTable").empty();
+            $("#canTable").empty();
+            $("#doneTable").empty();
+
+            regionArray.forEach(fillRegion);
+        }
+
+        // -=fill regions within the side menu=-
+        function fillRegion(item)
+        {
+            //Determine wether or not the region is accessable
+            if(item.accessable == "good")
+            {
+                var table = "#canTable";
+            }
+            else if(item.accessable == "bad")
+            {
+                var table = "#cannotTable";
+            }
+            else
+            {
+                var table = "#doneTable";
+            }
+
+            //Create a table for the region in the apprpriate part of the side menu
+            var tableBod = item.regionName;
+            tableBod = tableBod.split(' ').join('');
+
+            $(table).append('<div class="well regWell"' 
+             + 'onclick="tableClick('+"'" + item.regionName + "'" +')">'
+             + '<h3 class = "wellHead">' + item.regionName + '</h3>'
+             + '<table class="regTable" '
+             + 'id="' + tableBod + '" >'
+             + '<tbody>');
+
+            //Determine the status of each area within the region
+            var sizeB = item.areaArray.length;
+            for(var j = 0; j < sizeB; j++)
+            {
+                var txt = "";
+                if(item.areaArray[j].status == "good")
+                {
+                    txt = ' class="good"';
+                }
+                else if(item.areaArray[j].status == "bad")
+                {
+                    txt = ' class="bad"';
+                }
+                else
+                {
+                    txt = ' class="done"';
+                }
+
+                //Add each area to the region
+                $("#" + tableBod).append('<tr  '+ txt + '> '
+                 +'<td>- ' + item.areaArray[j].locationName + '</td>'
+                 +'<td> (' + (item.areaArray[j].numOfChests - item.areaArray[j].numFound) + ')</td>'
+                 +'</tr>');
+            }
+            $(table).append('</tbody></table></div>');
+        }
+
+        // -=When an item button from the main menu is clicked=-
+        function itemFound(area, region, index)
+        {
+            //Find the button's region
+            for(var i = 0; i < regionArray.length; i++)
+            {
+                if(regionArray[i].regionName == region)
+                {
+                    var tempReg = regionArray[i];
+                }
+            }
+            //Find the button's area
+            for(var i = 0; i < tempReg.areaArray.length; i++)
+            {
+                if(tempReg.areaArray[i].locationName == area)
+                {
+                    var temp = tempReg.areaArray[i];
+                }
+            }
+
+            //Update how many items have been found in that area
+            temp.numFound = temp.numFound + 1;
+            temp.arrFound.push(index);
+
+            //If an area has no un-opened chests left, change it's status to done
+            if(temp.numOfChests == temp.numFound)
+            {
+                temp.status = "done";
+            }
+
+            //Re-populate the tables
+            tableClick(region);
+            populateLocationList();
+        }
+
+        // -=Determine whether or not areas within a region are accessable=-
+        function areaPossibility(region)
+        {
+            var doneCheck = true;
+            var status = "";
+            var size = region.areaArray.length;
+            for(var i = 0; i < size; i++)
+            {
+                //If the user doesn't have an item required for the area, flag that areaas inaccessable
+                var badCheck = true;
+                var itemString = region.areaArray[i].requiredItems;
+                var reqItems = itemString.split(', ');
+                for(var j = 0; j < reqItems.length; j++)
+                {
+                    if(!inventoryList.includes(reqItems[j]))
+                    {
+                        badCheck = false;
+                    }
+                }
+                
+                //If the area is NOT flagged as 'done' flag the entire region as not done
+                if(region.areaArray[i].status != "done")
+                {
+                    doneCheck = false;
+
+                    //If the area was NOT flagged as inacessable, flag the entire region as acessable
+                    if(badCheck)
+                    {
+                        region.accessable = "good";
+                        region.areaArray[i].status = "good";
+                    }
+                    else
+                    {
+                        region.areaArray[i].status = "bad";
+                    }
+
+                }
+
+            }
+
+            //If all of the areas were flagged 'done' flag the entire region as done
+            if(doneCheck)
+            {
+                region.accessable = "done";
+            }
+        }
+
+        // -=Run areaPossibility for each region in the region array=-
+        function checkPossibility()
+        {
+            regionArray.forEach(areaPossibility);
+        }
+
+        // -=When a button or side table element is pushed=-
+        function tableClick(region)
+        {
+            checkPossibility();
+
+            //Find the region that the button belongs to
+            for(var i = 0; i < regionArray.length; i++)
+            {
+                if(regionArray[i].regionName == region)
+                {
+                    var temp = regionArray[i];
+                }
+            }
+
+            //Empty and re-populate the main menu
+            $("#mainMenu").empty();
+            $("#mainMenu").append('<div class="well regWell" style="width: 100%;">'
+            +'<h2 class="wellHead">' + region + '</h2><table class="regTable" id="mainWell"><tbody>');
+
+            //Color areas based on it's status
+            for(var i = 0; i < temp.areaArray.length; i++)
+            {
+                var txt = "";
+                if(temp.areaArray[i].status == "good")
+                {
+                    txt = ' class="good"';
+                }
+                else if(temp.areaArray[i].status == "bad")
+                {
+                    txt = ' class="bad"';
+                }
+                else
+                {
+                    txt = ' class="done"';
+                }
+
+                $("#mainWell").append('<tr '+ txt + '>'
+                + '<td> - ' + temp.areaArray[i].locationName + '</td>'
+                + '<td ' + txt + '> ' + temp.areaArray[i].requiredItems + '</td>'
+                + '<td><form id="check'+ i + '" >');
+
+                //Populate each area with buttons
+                for(var j = 0; j < temp.areaArray[i].numOfChests; j++)
+                {
+                    if(temp.areaArray[i].arrFound.includes(j))
+                    {
+                        $("#check" + i).append('<button type="button" class="btn itemFound" '
+                        +' style="margin: 5px;">' + (j+1) + '</button>')
+                    }
+                    else
+                    {
+                        $("#check" + i).append('<button type="button" class="btn item" '
+                         + 'onclick="itemFound(' + "'" + temp.areaArray[i].locationName + "'"
+                         + ', ' + "'" + temp.regionName + "'" 
+                         + ', ' + j + ')"'
+                         +' style="margin: 5px;">' + (j+1) + '</button>')
+                    }
+                }
+                $("#mainWell").append('</form></td></tr>');
+
+            }   
+
+            $("#mainWell").append('</tbody></table>');
+        }
+
+        $(document).ready(function () {
+            
+            //Use input from database to fill the region/area arrays
+            $.get("http://127.0.0.1:5000/getData", function(data, status){
+                inData = JSON.parse(data);
+
+
+            //Process data from database
+            var size = Object.keys(inData).length;
+            for (var i = 0; i < size; i++)
+            {
+                tempArray = [];
+                var newRegion = new region(inData[i][0], tempArray);
+                var check = true;
+                for(var j = 0; j < regionArray.length; j++)
+                {
+                    if(regionArray[j].regionName == newRegion.regionName)
+                    {
+                        check = false
+                    }
+                }
+                if(check)
+                {
+                    addRegion(newRegion);
+                }
+                var newArea = new area(inData[i][1], inData[i][2],
+                                        inData[i][3], inData[i][4]);
+
+                addArea(inData[i][0], newArea);
+            }
+
+            //Check to see if a region is accessable
+            checkPossibility();
+            populateLocationList();
+            })
+            
+        });
+
+
+    </script>
+
+    <style>
+        /* Remove Gutters from the grid */
+        .row.no-gutters 
+        {
+            margin-right: 0;
+            margin-left: 0;
+        }
+        .row.no-gutters > [class^="col-"],
+        .row.no-gutters > [class*=" col-"] 
+        {
+            padding-right: 0;
+            padding-left: 0;
+        }
+        
+        /* Flex Box Classes */
+        .flex-container 
+        {
+            display: -webkit-flex;
+            display: flex;
+            background-color: rgb(200,200,200);
+            margin: 0;
+        }
+        .flex-item 
+        {
+            background-color: rgb(240,240,240);
+            border-color:rgb(175,175,185);
+            margin: 10px;
+            overflow-x: hidden;
+        }
+
+        /* Flex Boxes */
+        .map-menu
+        {
+            -webkit-flex: 1;
+            flex: 1;
+            padding: 0px;
+        }
+        .tracker
+        {
+            -webkit-flex: 4;
+            flex: 4;
+        }
+        .main 
+        {
+            -webkit-flex: 1;
+            flex: 1;
+            overflow-y: scroll;
+        }
+        .location-menu 
+        {
+            -webkit-box-flex: 1;
+            flex: 1;
+            overflow-y: scroll;
+        }
+
+        /* Buttons */
+
+        button.LWbutton {
+            background-color: rgb(200,170,50);
+            border-bottom-color: rgb(150,120,30);
+            color: rgb(250,250,250);
+            width: 75%;
+            height: 25%;
+            margin-top: 20%;
+            margin-bottom: 5%;
+        }
+        button.DWbutton 
+        {
+            background-color: rgb(100,30,100);
+            color: rgb(250,250,250);
+            border-bottom-color: rgb(50,10,50);
+            width: 75%;
+            height: 25%;
+            margin-top: 5%;
+            margin-bottom: 20%;
+        }
+        button.btn.item:hover{
+            background-color: rgb(180, 180, 180);
+        }
+        button.item:checked{
+            background-color: rgb(70, 70, 70);
+        }
+        button.btn.itemFound
+        {
+            background-color: rgb(70,70,70);
+        }
+        table.regionTable
+        {
+            border: 1px rgb(75, 75, 75);
+            width: 100%;
+        }
+        table.regionTable:hover
+        {
+            background-color: rgb(130, 130, 130);
+        }
+        tr.good
+        {
+            background-color: rgb(180, 200, 220);
+            color: rgb(70, 90, 90);
+            margin: 5px;
+        }
+        tr.done
+        {
+            background-color: rgb(40, 70, 80);
+            padding: 25px;
+            margin: 5px;
+        }
+        tr.bad
+        {
+            background-color: rgb(100, 140, 150);
+            color: rgb(70, 90, 90);
+            padding: 25px;
+            margin: 5px;
+        }
+        td
+        {
+            padding: 5px;
+        }
+        td.bad
+        {
+            padding: 5px;
+            color: rgb(250, 250, 250);
+        }
+        div.well.regWell
+        {
+            background-color: rgb(180, 200, 220);
+            border: 1px solid rgb(20, 100, 200);
+            padding: 0px;
+        }
+        table.regTable
+        {
+            width: 100%;
+        }
+        table.regTable, tr
+        {
+            padding: 5px;
+            border: 5px solid rgb(240, 240, 240)
+        }
+        .wellHead
+        {
+            background-color: rgb(20, 100, 200);
+            margin: 0px;
+            padding: 5px;
+            color: rgb(240, 240, 250);
+        }
+        .wellHead:hover
+        {
+            background-color: rgb(10, 50, 130);
+        }
+
+    </style>
+
+</head>
+<body>
+    <div class="container" id="dynamicHeight" style="width: 90%; height: 100vh;">
+        <div class="row no-gutters" style="width: 100%; height: 100%;">
+            <div class="container col-xs-9">
+
+                <div class="flex-container" style="height: 70vh;">
+                    <div class="well flex-item main">
+
+                        <div class="container" id="mainMenu" style="width: 100%;">
+                        </div>
+
+                 
+                    </div>
+
+                </div>
+
+                <div class="flex-container" style="height: 30vh;">
+                    <div class="well flex-item map-menu text-center">
+                        <button type="button" class="btn LWbutton" id="LWbutton">
+                            <span>LW</span>
+                        </button>
+                        <button type="button" class="btn DWbutton" id="DWbutton">
+                            <span>DW</span>
+                        </button>
+                    </div>
+                    <div class="well flex-item tracker">
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="container col-xs-3">
+                <div class="flex-container" style="height: 100vh;">
+                    <!-- Location Menu -->
+                    <div class="well flex-item location-menu" id="locationTable" style="width: 100%;">
+                        <div class="container">
+                            <h1>Accessable</h1>
+                        </div>
+                        <div class="container" id="canTable" style="width: 100%;">
+
+                        </div>
+
+                        <div class="container">
+                            <h1>Not Accessable</h1>
+                        </div>
+                        <div class="container" id="cannotTable" style="width: 100%;">
+
+                        </div>
+
+                        <div class="container">
+                            <h1>Completed</h1>
+                        </div>
+                        <div class="container" id="doneTable" style="width: 100%;">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+
+</body>
+</html>

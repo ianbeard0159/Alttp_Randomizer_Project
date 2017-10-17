@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+
+        <!-- Set page width and initial zoom to work with whatever device is being used -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Bootstrap-CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <!-- Bootstrap-jQuerry -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <!-- Bootstrap-JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+        <script>
+
+
+            var infoArray = [];
+
+            function ajaxRequest(inUrl, success)
+            {
+                $.ajax(
+                    {
+                        type: "GET",
+                        url: "http://127.0.0.1:5000/" + inUrl,
+                        success: success
+                    });
+            }
+
+            function info(inRegion, inArea, inNumItems, inReqItems, inCheck)
+            {
+                this.region = inRegion;
+                this.inArea = inArea;
+                this.numItems = inNumItems;
+                this.reqItems = inReqItems;
+                this.check = inCheck;
+            }
+
+            function addInfo(info)
+            {
+                infoArray.push(info);
+            }
+
+            // -=Populate Tables=-
+            function fillTable(inTable, inArray)
+            {
+                var table = "#" + inTable;
+
+                $(table).empty();
+
+                //Populate Table Head
+                $(table).append('<thead><h3>' + inTable + '</h3></thead>');
+
+                //Populate Table Body
+                $(table).append('<tbody>');
+                for(var i = 0; i < inArray.length; i++)
+                {
+                    $(table).append('<tr>' + inArray[i] + '</tr>');
+                }
+                $(table).append('</tbody>');
+            }
+
+            $(document).ready(function () {
+
+                ajaxRequest("getData", function(data)
+                            {
+                                var infoData = JSON.parse(data);
+                                
+                                //Process data from database
+                                for (var i = 0; i < Object.keys(infoData).length; i++)
+                                {
+                                    var infoObj = new info(infoData[i][0], infoData[i][1], 
+                                                        infoData[i][2], infoData[i][3], 
+                                                        infoData[i][4]);
+
+                                    addInfo(infoObj);
+                                    
+                                }
+
+                                fillTable("input", infoArray);
+                            });
+
+
+            });
+
+        </script>
+
+    </head>
+
+    <body>
+
+        <table class = "table" id= "input">
+            
+        </table>
+    </body>
+</html>
